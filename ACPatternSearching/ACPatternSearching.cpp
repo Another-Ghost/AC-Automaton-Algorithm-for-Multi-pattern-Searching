@@ -169,32 +169,99 @@ void ac_build(NODE* root, vector<string> P, int n)
     }
 }
 
-void ac_query(NODE* root, vector<char> T)
+
+//void ac_query(NODE* root, vector<char> T)
+void ac_query(NODE* root)
 {
-    NODE* tmp = root;
-    for (int i = 0; i < T.size(); i++)
-    {
-        int c = T[i] - 'a';
-        while (NULL == tmp->child[c] && tmp->fail)
-            tmp = tmp->fail;
-        if (tmp->child[c])
-            tmp = tmp->child[c];
-        else
-            continue;
-        if (tmp->exist.size())
-        {
-            for (int j = 0; j < tmp->exist.size(); j++)
-            {
-                int len = tmp->exist[j];
-                print_matching_result(T, i - len + 1, len);
-            }
-        }
-    }
+	string name = "Out.txt";
+	ofstream out_file(name, fstream::out);
+	try
+	{
+		if (out_file.fail())
+			throw name;
+	}
+	catch (string s)
+	{
+		cout << "save file:[" << s << "] failed" << endl;
+		//exit(1);
+		return;
+	}
+
+
+	DWORD start_time = GetTickCount();
+	  long num_loop = pow(M, N);
+	  long count = 0;
+	  while (count < num_loop) {
+		  vector<char> w;
+		  long dividend = count;
+		  for (int i = 0; i < N; i++) {
+			  //long divisor = pow(M, (N - i + 1));
+			  int remainder = dividend % M;
+			  dividend = dividend / M;
+			  w.insert(w.begin(), wheels[N - i - 1][remainder]);
+			  //w.push_back(remainder);
+		  }
+
+		  //ac_query(root, w);
+
+		  NODE* tmp = root;
+		  for (int i = 0; i < w.size(); i++)
+		  {
+			  int c = w[i] - 'a';
+			  while (NULL == tmp->child[c] && tmp->fail)
+				  tmp = tmp->fail;
+			  if (tmp->child[c])
+				  tmp = tmp->child[c];
+			  else
+				  continue;
+			  if (tmp->exist.size())
+			  {
+				  for (int j = 0; j < tmp->exist.size(); j++)
+				  {
+					  int len = tmp->exist[j];
+					  //print_matching_result(w, i - len + 1, len);
+
+					  string word;
+					  for (int k = 0; k < len; k++) {
+						  word = word + w[i - len + 1 + k];
+					  }
+					  //out_file << word << endl;
+					  output.insert(word);
+				  }
+			  }
+		  }
+
+		  count++;
+	  }
+	  DWORD end_time = GetTickCount();
+	  cout << "The run time is:" << (end_time - start_time) << "ms!" << endl;
+
+	  out_file.close();
+	  system("pause");
+	  //for (auto word : output) {
+		 // cout << word << endl;
+	  //}
 }
+
+
 
 
 void ac_query_wheels(NODE* root, vector<vector<char>> wheels) {
 	DWORD start_time = GetTickCount();
+
+	string name = "Out.txt";
+	ofstream out_file(name, fstream::out);
+	try
+	{
+		if (out_file.fail())
+			throw name;
+	}
+	catch (string s)
+	{
+		cout << "save file:[" << s << "] failed" << endl;
+		//exit(1);
+		return;
+	}
 
 	NODE* tmp = root;
 	vector<NODE*> tmpList;
@@ -248,13 +315,13 @@ void ac_query_wheels(NODE* root, vector<vector<char>> wheels) {
 				{
 					int len = tmp->exist[j];
 					//print_matching_result(wheel, i - len + 1, len);
-					InsertToOutput(wheel, i - len + 1, len);
+					//InsertToOutput(wheel, i - len + 1, len);
 
 					string word;
 					for (int k = 0; k < len; k++) {
 						word = word + wheel[i - len + 1 + k];
 					}
-
+					//out_file << word << endl;
 					output.insert(word);
 				}
 			}
@@ -262,8 +329,13 @@ void ac_query_wheels(NODE* root, vector<vector<char>> wheels) {
 		}
 
 	}
+	out_file.close();
+
+
 	DWORD end_time = GetTickCount();
 	cout << "The run time is:" << (end_time - start_time) << "ms!" << endl;
+
+	system("pause");
 
 	for (auto word : output) {
 		cout << word << endl;
@@ -322,7 +394,7 @@ int main()
   //      count++;
   //  }
 	ac_query_wheels(root, wheels);
-    
+	//ac_query(root);
 
     //aho_corasick(dictionary, dictionary.size(), wheels[0]);
 }
