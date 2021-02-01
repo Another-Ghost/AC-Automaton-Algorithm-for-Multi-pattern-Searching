@@ -30,7 +30,7 @@ bool ReadDictionary(const string& file_name, vector<string> & dictionary) {
 	}
 	catch (string s){
 		cout << "Failed to load "+ file_name << endl;
-		exit(1);
+		exit(0);
 		//return false;
 	}
 
@@ -54,7 +54,7 @@ bool ReadWheels(const string& file_name, vector<vector<char>> & wheels, int & N,
 	}
 	catch (string s) {
 		cout << "Failed to load " + file_name << endl;
-		exit(1);
+		exit(0);
 		//return false;
 	}
 
@@ -211,7 +211,7 @@ void ACQueryWheels(Node* root, vector<vector<char>> wheels, set<string>& output)
 	catch (string s)
 	{
 		cout << "save file:[" << s << "] failed" << endl;
-		exit(1);
+		exit(0);
 		//return;
 	}
 
@@ -332,9 +332,12 @@ int main()
 	vector<vector<char>> wheels; //Target strings are composed by a sequence of single letter provided by each wheel  
 	int N, M; //N is the number of wheels, M is the number of letters per wheels
 
+
 	ReadDictionary("dictionary.txt", dictionary);
 
 	ReadWheels("wheels.txt", wheels, N, M);
+
+	cout << "Loaded successfully..." << endl;
 	//Debug
 	//if (ReadWheels("wheels.txt", wheels, N, M)) {
 	//	for (int i = 0; i < wheels.size(); i++) {
@@ -345,8 +348,6 @@ int main()
 	//	}
 	//}
 	Node* root_node = ACBuild(dictionary);
-
-	cout << "Loaded successfully." << endl;
 
 	cout << "Please wait for the output..." << endl;
 
@@ -371,7 +372,7 @@ int main()
 	catch (string s)
 	{
 		cout << "Saving file:[" << s << "] failed." << endl;
-		exit(1);
+		exit(0);
 		//return;
 	}
 
