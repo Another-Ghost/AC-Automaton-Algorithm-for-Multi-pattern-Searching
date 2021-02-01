@@ -9,58 +9,58 @@
 #include <ctype.h>
 #include <set>
 #include <windows.h>
+#include <algorithm>  
 
 using namespace std;
 
-//#define ALPHABET   (26)
-//typedef struct _Node {
-//    vector<int> exist;
-//    _Node* fail;
-//    _Node* child[ALPHABET];
-//}Node;
 
 const string FILEDIR("../files/");
-vector<string> dictionary;
+const string OUTPUT_NAME("output_new.txt");
+const string DICTIONARY_NAME("dictionary.txt");
+const string WHEELS_NAME("wheels.txt");
 
-bool ReadDictionary(const string& filename) {
-    ifstream infile(FILEDIR + filename);
+
+
+/*Build dictionary from reading file*/
+bool ReadDictionary(const string& file_name, vector<string> & dictionary) {
+    ifstream infile(FILEDIR + file_name);
 	try {
 		if (infile.fail())
-			throw filename;
+			throw file_name;
 	}
 	catch (string s){
-		cout << "Failed to load "+ filename << endl;
-		//exit(1);
-		return false;
-		s[1];
+		cout << "Failed to load "+ file_name << endl;
+		exit(1);
+		//return false;
 	}
 
-	
 	while (!infile.eof()){
         string word;
 		infile >> word;
         //word = strupr(word);
 		dictionary.push_back(word);
 	}
-
 	return true;
 }
 
-vector<vector<char>> wheels;
-int N, M; //n is the number of wheels, m is the number of letters per wheels
-bool ReadWheels(const string& filename) {
-	ifstream infile(FILEDIR + filename);
+
+
+/*Build Wheels from reading file*/
+bool ReadWheels(const string& file_name, vector<vector<char>> & wheels, int & N, int & M) {
+	ifstream infile(FILEDIR + file_name);
 	try {
 		if (infile.fail())
-			throw filename;
+			throw file_name;
 	}
 	catch (string s) {
-		cout << "Failed to load " + filename << endl;
-		//exit(1);
-		return false;
+		cout << "Failed to load " + file_name << endl;
+		exit(1);
+		//return false;
 	}
+
 	infile >> N;
 	infile >> M;
+
 	for (int i = 0; i < N; i++) {
 		vector<char> wheel;
 		for (int j = 0; j < M; j++) {
@@ -75,327 +75,311 @@ bool ReadWheels(const string& filename) {
 	return true;
 }
 
+
 #define ALPHABET   (26)
-
-
-typedef struct _NODE
+/*Node of Trie Tree*/
+typedef struct _Node
 {
-	int name;               // debug
-	vector<int> exist;
-	_NODE* fail;
-	_NODE* child[ALPHABET];
-	_NODE()
+	vector<int> exist;			//Existing words ended by this node, the value of each member means the length of that word and which could be used to find out the whole word 
+	_Node* fail;				//Fail note
+	_Node* child[ALPHABET];		//Child notes representing the next letters
+	_Node()
 	{
-		name = 0;           // debug
 		fail = NULL;
-		memset(child, NULL, ALPHABET * sizeof(_NODE*));
+		memset(child, NULL, ALPHABET * sizeof(_Node*));
 	}
-}NODE;
+}Node;
 
-void print_matching_result(vector<char> T, int start, int len)
+
+
+//void InsertToOutput(vector<char> t_string, int start, int len) {
+//	string word;
+//	for (int i = 0; i < len; i++) {
+//		word = word + t_string[start + i];
+//	}
+//	output.insert(word);
+//}
+
+/*Add word to Trie Tree*/
+void TrieInsert(Node* root, string word)
 {
-	for (int i = 0; i < start; i++)
-		printf(" ");
-	for (int i = 0; i < len; i++)
-		printf("%c", T[start + i]);
-	printf("\n");
-}
-
-set<string> output;
-void InsertToOutput(vector<char> T, int start, int len) {
-	string word;
-	for (int i = 0; i < len; i++) {
-		word = word + T[start + i];
-	}
-	output.insert(word);
-}
-
-
-void trie_insert(NODE* root, string word)
-{
-    NODE* tmp = root;
+    Node* tmp = root;
 
     for (int i = 0; i < word.size(); i++)
     {
-        int c = word[i] - 'a';
-        if (NULL == tmp->child[c])
-            tmp->child[c] = new NODE();
+        int c = word[i] - 'A';
+		if (NULL == tmp->child[c]) {
+			tmp->child[c] = new Node();
+		}
         tmp = tmp->child[c];
     }
     tmp->exist.push_back(word.size());
 }
 
-void ac_build(NODE* root, vector<string> P, int n)
+/*Build Trie Graph*/
+Node* ACBuild(vector<string> p_strings)
 {
-    for (int i = 0; i < n; i++)
-        trie_insert(root, P[i]);
+	Node* root = new Node();
+	int n = p_strings.size();
 
-    queue<NODE*> q;
+    for (int i = 0; i < n; i++)
+		TrieInsert(root, p_strings[i]);
+
+    queue<Node*> node_queue; //Using BSF building Tire Graph
     for (int i = 0; i < ALPHABET; i++)
     {
         if (root->child[i])
         {
             root->child[i]->fail = root;
-            q.push(root->child[i]);
+			node_queue.push(root->child[i]);
         }
     }
 
-    while (!q.empty())
+    while (!node_queue.empty())
     {
-        NODE* x = q.front(); q.pop();
+        Node* x = node_queue.front(); 
+		node_queue.pop();
         for (int i = 0; i < ALPHABET; i++)
         {
             if (x->child[i])
             {
-                NODE* y = x->child[i], * fafail = x->fail;
-                /*
-                    x--fail-→fafail         x--fail-→fafail
-                      ↘ⁱ             ==>     ↘ⁱ        ↘ⁱ
-                        y                      y--fail--→★
-                */
+                Node* y = x->child[i], * fafail = x->fail; //fafail is fail node of y's father node(x)
+
                 while (fafail && NULL == fafail->child[i])
                     fafail = fafail->fail;
-                if (NULL == fafail)
+                if (NULL == fafail) //If father node is root
                     y->fail = root;
                 else
                     y->fail = fafail->child[i];
 
-                if (y->fail->exist.size())
+                if (y->fail->exist.size())	//If there is at least one word ended by y  
                     for (int j = 0; j < y->fail->exist.size(); j++)
                         y->exist.push_back(y->fail->exist[j]);
-                q.push(y);
+				node_queue.push(y);
             }
+			else {
+				x->child[i] = (x != root) ? x->fail->child[i] : root; //Optimization
+			}
         }
     }
+	return root;
 }
 
-
-//void ac_query(NODE* root, vector<char> T)
-void ac_query(NODE* root)
-{
-	string name = "Out.txt";
-	ofstream out_file(name, fstream::out);
-	try
+//Find out matched pattern strings in the dictionary of target string 
+void ACQuery(Node* root, vector<char> t_string, set<string>& output) {
+	Node* tmp = root;
+	for (int i = 0; i < t_string.size(); i++)
 	{
-		if (out_file.fail())
-			throw name;
-	}
-	catch (string s)
-	{
-		cout << "save file:[" << s << "] failed" << endl;
-		//exit(1);
-		return;
-	}
+		int c = t_string[i] - 'a';
+		while (NULL == tmp->child[c] && tmp->fail)
+			tmp = tmp->fail;
+		if (tmp->child[c])
+			tmp = tmp->child[c];
+		else
+			continue;
+		if (tmp->exist.size())
+		{
+			for (int j = 0; j < tmp->exist.size(); j++)
+			{
+				int len = tmp->exist[j];
+				//print_matching_result(w, i - len + 1, len);
 
+				string word;
+				for (int k = 0; k < len; k++) {
+					word = word + t_string[i - len + 1 + k];
+				}
 
-	DWORD start_time = GetTickCount();
-	  long num_loop = pow(M, N);
-	  long count = 0;
-	  while (count < num_loop) {
-		  vector<char> w;
-		  long dividend = count;
-		  for (int i = 0; i < N; i++) {
-			  //long divisor = pow(M, (N - i + 1));
-			  int remainder = dividend % M;
-			  dividend = dividend / M;
-			  w.insert(w.begin(), wheels[N - i - 1][remainder]);
-			  //w.push_back(remainder);
-		  }
-
-		  //ac_query(root, w);
-
-		  NODE* tmp = root;
-		  for (int i = 0; i < w.size(); i++)
-		  {
-			  int c = w[i] - 'a';
-			  while (NULL == tmp->child[c] && tmp->fail)
-				  tmp = tmp->fail;
-			  if (tmp->child[c])
-				  tmp = tmp->child[c];
-			  else
-				  continue;
-			  if (tmp->exist.size())
-			  {
-				  for (int j = 0; j < tmp->exist.size(); j++)
-				  {
-					  int len = tmp->exist[j];
-					  //print_matching_result(w, i - len + 1, len);
-
-					  string word;
-					  for (int k = 0; k < len; k++) {
-						  word = word + w[i - len + 1 + k];
-					  }
-					  //out_file << word << endl;
-					  output.insert(word);
-				  }
-			  }
-		  }
-
-		  count++;
-	  }
-	  DWORD end_time = GetTickCount();
-	  cout << "The run time is:" << (end_time - start_time) << "ms!" << endl;
-
-	  out_file.close();
-	  system("pause");
-	  //for (auto word : output) {
-		 // cout << word << endl;
-	  //}
-}
-
-
-
-
-void ac_query_wheels(NODE* root, vector<vector<char>> wheels) {
-	DWORD start_time = GetTickCount();
-
-	string name = "Out.txt";
-	ofstream out_file(name, fstream::out);
-	try
-	{
-		if (out_file.fail())
-			throw name;
-	}
-	catch (string s)
-	{
-		cout << "save file:[" << s << "] failed" << endl;
-		//exit(1);
-		return;
-	}
-
-	NODE* tmp = root;
-	vector<NODE*> tmpList;
-	tmpList.resize(8);
-    tmpList[0] = root;
-
-    vector<char> wheel;
-	wheel.resize(8);
-	long num_loop = pow(M, N);
-	long count = 0;
-	vector<char> wheel_pre;
-	wheel_pre.resize(8);
-	
-	int changed_pos = 0;
-
-	while (count < num_loop) {
-		wheel.clear();
-		long dividend = count;
-		for (int i = 0; i < N; i++) {
-			//long divisor = pow(M, (N - i + 1));
-			int remainder = dividend % M;
-			dividend = dividend / M;
-			wheel.insert(wheel.begin(), wheels[N - i - 1][remainder]);
-			//w.push_back(remainder);
-			if (wheel_pre[N - i - 1] != wheels[N - i - 1][remainder]) {
-				changed_pos = N - i - 1;
-				wheel_pre[N - i - 1] = wheels[N - i - 1][remainder];
+				output.insert(word);
 			}
 		}
-		count++;
-		//wheel_pre = wheel;
+	}
+}
 
-		if (changed_pos == 0) {
-			tmp = root;
+/*find all possible words of two letters or more created by wheels(with outputting to file)*/
+void ACQueryWheels(Node* root, vector<vector<char>> wheels, set<string>& output)
+{
+	int N = wheels.size();
+	int M = wheels[1].size();
+
+	string name("Out.txt");
+	ofstream out_file(FILEDIR + name, fstream::out);
+	try
+	{
+		if (out_file.fail())
+			throw name;
+	}
+	catch (string s)
+	{
+		cout << "save file:[" << s << "] failed" << endl;
+		exit(1);
+		//return;
+	}
+
+	//DWORD start_time = GetTickCount(); //Debug
+
+	long num_loop = pow(M, N);
+	long count_loop = 0;
+	while (count_loop < num_loop) {
+		vector<char> t_string;
+		t_string.resize(N);
+		long dividend = count_loop;
+		for (int i = 0; i < N; i++) {
+			int remainder = dividend % M;
+			dividend = dividend / M;
+			t_string[N - i - 1] = wheels[N - i - 1][remainder];
+		}
+
+		ACQuery(root, t_string, output);
+
+		count_loop++;
+	}
+	//DWORD end_time = GetTickCount(); //Debug
+	//cout << "The run time is:" << (end_time - start_time) << "ms!" << endl; //Debug
+
+	for (auto word : output) {
+		out_file << word << endl;
+	}
+
+	out_file.close(); //Debug
+	//system("pause"); //Debug
+
+}
+
+/*Optimized version of ACQueryWheels(without outputting to file)*/
+void ACQueryWheels_Opt(Node* root, vector<vector<char>> wheels, set<string> & output) {
+	int N = wheels.size();	
+	int M = wheels[1].size();
+
+	//DWORD start_time = GetTickCount(); //Debug
+
+	Node* temp = root; 
+	vector<Node*> temp_list; //Preserving the result nodes of last searching
+	temp_list.resize(N); 
+	temp_list[0] = root;
+
+
+	long num_loop = pow(M, N); //total of loop times
+	long count_loop = 0; //current loop times
+	vector<char> t_string_pre; //preserving last T string
+	t_string_pre.resize(N); 
+	
+	int lowest_changed_bit = 0; //mark of the lowest changed bit when the T string has changed along with the number of loop has increased
+
+	while (count_loop < num_loop) {
+		vector<char> t_string;
+		t_string.resize(N);
+
+		//Update t_string
+		long dividend = count_loop; 
+		for (int i = 0; i < N; i++) {
+
+			int remainder = dividend % M;
+			dividend = dividend / M;
+			t_string[N - i - 1] = wheels[N - i - 1][remainder];
+			if (t_string_pre[N - i - 1] != t_string[N - i - 1]) {
+				lowest_changed_bit = N - i - 1;
+				t_string_pre[N - i - 1] = t_string[N - i - 1]; 		//make wheel_pre = wheel;
+			}
+		}
+		count_loop++;
+
+
+		if (lowest_changed_bit == 0) {
+			temp = root;
 		}
 		else{
-			tmp = tmpList[changed_pos - 1];
+			temp = temp_list[lowest_changed_bit - 1];
 		}
 
-		for (int i = changed_pos; i < N; i++) {
-			int c = wheel[i] - 'a';
-			while (NULL == tmp->child[c] && tmp->fail)
-				tmp = tmp->fail;
-			if (tmp->child[c])
-				tmp = tmp->child[c];
+		for (int i = lowest_changed_bit; i < N; i++) {	//Iteration starts from the the lowest changed bit, doing this could decrease a huge number of outputting repetitive words.
+			int c = t_string[i] - 'a';
+			while (NULL == temp->child[c] && temp->fail)		
+				temp = temp->fail;
+			if (temp->child[c])
+				temp = temp->child[c];
 			else
-				continue;
-			if (tmp->exist.size())
+				continue;	//temp is root node now
+			if (temp->exist.size())
 			{
-				for (int j = 0; j < tmp->exist.size(); j++)
+				for (int j = 0; j < temp->exist.size(); j++)
 				{
-					int len = tmp->exist[j];
-					//print_matching_result(wheel, i - len + 1, len);
-					//InsertToOutput(wheel, i - len + 1, len);
+					int len = temp->exist[j];
 
 					string word;
 					for (int k = 0; k < len; k++) {
-						word = word + wheel[i - len + 1 + k];
+						word = word + t_string[i - len + 1 + k];
 					}
-					//out_file << word << endl;
+
 					output.insert(word);
 				}
 			}
-			tmpList[i] = tmp;
+			temp_list[i] = temp;
 		}
 
 	}
-	out_file.close();
 
-
-	DWORD end_time = GetTickCount();
-	cout << "The run time is:" << (end_time - start_time) << "ms!" << endl;
-
-	system("pause");
-
-	for (auto word : output) {
-		cout << word << endl;
-	}
-
+	//DWORD end_time = GetTickCount(); //Debug
+	//cout << "The run time is:" << (end_time - start_time) << "ms!" << endl; //Debug
+	//system("pause"); //Debug
 }
 
-
-NODE* root;
-void aho_corasick(vector<string> P, int n, vector<char> T)
-{
-    printf("**********************************************\n");
-    //for (int i = 0; i < n; i++)
-    //    printf("\"%s\" ", P[i]);
-    //printf("\n%s\n", T);
-
-    root = new NODE();
-    ac_build(root, P, n);
-
-    //print_automaton_info(root);         // debug
-}
 
 
 int main()
 {
-	if(ReadDictionary("dictionary.txt")){
-		//for (int i = 0; i < dictionary.size(); i++) {
-		//	cout << dictionary[i] << endl;
-		//}
-	}
+	set<string> output; //Using set preserving output words to eliminating repetition 
+	vector<string> dictionary; //The list of words(as known as Pattern string)
+	vector<vector<char>> wheels; //Target strings are composed by a sequence of single letter provided by each wheel  
+	int N, M; //N is the number of wheels, M is the number of letters per wheels
+
+	ReadDictionary("output.txt", dictionary);
+
+	ReadWheels("wheels.txt", wheels, N, M);
+	//Debug
+	//if (ReadWheels("wheels.txt", wheels, N, M)) {
+	//	for (int i = 0; i < wheels.size(); i++) {
+	//		for (int j = 0; j < wheels[0].size(); j++) {
+	//			cout << wheels[i][j];
+	//		}
+	//		cout << endl;
+	//	}
+	//}
+	Node* root_node = ACBuild(dictionary);
+
+
+	ACQueryWheels_Opt(root_node, wheels, output);
+	//ACQueryWheels(root_node, wheels, output);
 	
-	if (ReadWheels("wheels.txt")) {
-		for (int i = 0; i < wheels.size(); i++) {
-			for (int j = 0; j < wheels[0].size(); j++) {
-				cout << wheels[i][j];
-			}
-			cout << endl;
-		}
+
+	//Output to console
+	for (auto word : output) {
+		transform(word.begin(), word.end(), word.begin(), ::toupper);
+		cout << word << endl;
 	}
-    aho_corasick(dictionary, dictionary.size(), wheels[0]);
+	cout << "Found " + to_string(output.size()) + " words" << endl;
 
-  //  long num_loop = pow(M, N);
-  //  long count = 0;
-  //  while (count < num_loop) {
-  //      vector<char> w;
-  //      long dividend = count;
-		//for (int i = 0; i < N; i++) {
-  //          //long divisor = pow(M, (N - i + 1));
-  //          int remainder = dividend % M;
-  //          dividend = dividend / M;
-  //          w.insert(w.begin(), wheels[N-i-1][remainder]);
-  //          //w.push_back(remainder);
-  //      }
-  //    
-  //      ac_query(root, w);
-  //      count++;
-  //  }
-	ac_query_wheels(root, wheels);
-	//ac_query(root);
+	//Output to file
+	ofstream out_file(FILEDIR + OUTPUT_NAME, fstream::out);
+	try
+	{
+		if (out_file.fail())
+			throw OUTPUT_NAME;
+	}
+	catch (string s)
+	{
+		cout << "Saving file:[" << s << "] failed." << endl;
+		exit(1);
+		//return;
+	}
 
-    //aho_corasick(dictionary, dictionary.size(), wheels[0]);
+	for (auto word : output) {
+		transform(word.begin(), word.end(), word.begin(), ::toupper);
+		out_file << word << endl;
+	}
+	out_file << "Found " + to_string(output.size()) + " words" << endl;
+
+	out_file.close();
+
+	system("pause");
 }
 
