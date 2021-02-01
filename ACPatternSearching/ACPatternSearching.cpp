@@ -107,7 +107,7 @@ void TrieInsert(Node* root, string word)
 
     for (int i = 0; i < word.size(); i++)
     {
-        int c = word[i] - 'A';
+        int c = word[i] - 'a';
 		if (NULL == tmp->child[c]) {
 			tmp->child[c] = new Node();
 		}
@@ -332,7 +332,7 @@ int main()
 	vector<vector<char>> wheels; //Target strings are composed by a sequence of single letter provided by each wheel  
 	int N, M; //N is the number of wheels, M is the number of letters per wheels
 
-	ReadDictionary("output.txt", dictionary);
+	ReadDictionary("dictionary.txt", dictionary);
 
 	ReadWheels("wheels.txt", wheels, N, M);
 	//Debug
@@ -346,6 +346,9 @@ int main()
 	//}
 	Node* root_node = ACBuild(dictionary);
 
+	cout << "Loaded successfully." << endl;
+
+	cout << "Please wait for the output..." << endl;
 
 	ACQueryWheels_Opt(root_node, wheels, output);
 	//ACQueryWheels(root_node, wheels, output);

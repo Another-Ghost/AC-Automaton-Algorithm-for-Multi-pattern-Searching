@@ -339,3 +339,4 @@ ASALocalRun/
 # BeatPulse healthcheck temp database
 healthchecksdb
 /ACPatternSearching/Out.txt
+/files/output_new.txt
